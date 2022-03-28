@@ -119,8 +119,106 @@ let getDatesFromMovie = async (movieLink) => {
 		});
 		return lists;
 	});
+	browser.close();
 	// console.log(links);
 	return links;
+};
+
+let getFormats = async (movieLink) => {
+	if (movieLink == "") {
+		console.log("invalid link 2");
+		return;
+	}
+	const browser = await puppeteer.launch({ headless: true });
+	const page = await browser.newPage();
+	await page.goto(movieLink, { waitUntil: "domcontentloaded" });
+	await autoScroll(page);
+	await page._client.send("Page.stopLoading");
+
+	let dates = page.evaluate(() =>
+		Array.from(document.getElementById("filterLanguage").childNodes)
+			.filter((ele) => ele.tagName == "LI")
+			.map((ele) => [
+				ele.textContent.toLowerCase().trim().replace(/\s/g, ""),
+				Array.from(ele.childNodes).filter((ele) => ele.tagName == "A")[0].href,
+			])
+	);
+	// await browser.close();
+	return dates;
+};
+
+let getAllShowsInCity = async (movieLink, date = "", format = "", dates = "") => {
+	if (dates == "") dates = await getDatesFromMovie(movieLink);
+	let link = "";
+	if (date != "") {
+		date = formatMovieName(date).replace(/\D+/g, "");
+
+		for (let i = 0; i < dates.length; i++) {
+			if (formatMovieName(dates[i][0].replace(/\D+/g, "")) == date) {
+				link = dates[i][1];
+				break;
+			}
+		}
+		if (link == "") {
+			console.log("invalid date");
+			return;
+		}
+	}
+
+	if (date == "") {
+		let arr = [];
+		dates.forEach((ele) => {
+			arr.push(getAllShowsInCity(movieLink, ele[0], format, dates));
+		});
+		return arr;
+	}
+
+	let formats = await getFormats(link);
+	let flag = 0;
+	if (format != "") {
+		let formatConstraints = format.trim().toLowerCase().split(" ").join("-");
+		for (let i = 0; i < formats.length; i++) {
+			const ele = formats[i];
+			if (ele[0] == formatConstraints) (flag = 1), (link = ele[1]);
+		}
+	}
+	if (flag == 0) {
+		let arr = [];
+		for (let i = 0; i < formats.length; i++) {
+			const ele = formats[i];
+			await arr.push(await getAllShowsInCity(ele[1], date, ele[0], dates));
+		}
+		return arr;
+	}
+
+	const browser = await puppeteer.launch({ headless: true });
+	const page = await browser.newPage();
+	await page.goto(link, { waitUntil: "domcontentloaded" });
+	await autoScroll(page);
+	await page._client.send("Page.stopLoading");
+
+	let shows = page.evaluate(() => {
+		let links = Array.from(document.getElementsByTagName("ul"))
+			.filter((ele) => ele.id == "venuelist")
+			.map((ele) => Array.from(ele.childNodes));
+		links = links[0].filter((ele) => ele.tagName == "LI").map((ele) => Array.from(ele.childNodes));
+		links = links[0].filter((ele) => ele.tagName == "DIV");
+		let [titleBox, timeBox] = links;
+
+		let venue = Array.from(titleBox.getElementsByTagName("A")).filter((ele) =>
+			ele.classList.contains("__venue-name")
+		)[0];
+		return [
+			[venue.textContent.toLowerCase().trim().replace(/\s/g, ""), venue.href],
+			Array.from(timeBox.getElementsByClassName("showtime-pill")).map((ele) => [
+				ele.textContent.toLowerCase().trim().replace(/\s/g, ""),
+				ele.href,
+			]),
+		];
+	});
+	// await page.close();
+	 console.log(await shows);
+	return shows;
 };
 
 let doesMovieExist = async (city, movieName) => {
@@ -239,7 +337,8 @@ let checkForCondition = async (func, value, time, notify) => {
 	// 	"Hindi, 2D"
 	// );
 	// let result = await getDatesFromMovie("https://in.bookmyshow.com/kharagpur/movies/rrr/ET00094579");
-	// let result = await getAllShowsInCity("https://in.bookmyshow.com/kharagpur/movies/rrr/ET00094579");
+	let result = await getAllShowsInCity("https://in.bookmyshow.com/kharagpur/movies/rrr/ET00094579", "  31 ");
+	// let result = await getFormats("https://in.bookmyshow.com/buytickets/rrr-kharagpur/movie-kgpr-ET00320580-MT/20220331");
 	await console.log(result);
 
 	// await checkForCondition(() => doesMovieExist("kharagpur", "rrr"), true, 5000, console.log);

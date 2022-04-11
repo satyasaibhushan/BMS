@@ -1,7 +1,8 @@
 import inquirer from "inquirer";
+import { table } from "table";
 
 let isValidKey = (key) => {
-	if (key == "city" || key == "movieName" || key == "date" || key == "format" || key == "theatreName") return true;
+	if (key == "city" || key == "movieName" || key == "date" || key == "format" || key == "theatreUrl") return true;
 	else return false;
 };
 let getStringFromListener = ({ type, listener, options }, isForDuplicateCheck = false) => {
@@ -103,10 +104,15 @@ let inquireAddCity = async () => {
 };
 
 let inquireAddTheatre = async () => {
+	let { theatreUrl } = await inquirer.prompt({
+		name: "theatreUrl",
+		type: "input",
+		message: "Enter the theatre's link you want to add listener for",
+	});
 	let { theatreName } = await inquirer.prompt({
 		name: "theatreName",
 		type: "input",
-		message: "Enter the theatre's link you want to add listener for",
+		message: "Enter the theatre's name of the given link",
 	});
 
 	let ans = await inquirer
@@ -121,12 +127,12 @@ let inquireAddTheatre = async () => {
 			switch (answers) {
 				case "an extra date to appear for a given theatre":
 					time = await inquireTime();
-					return [0, { time, theatreName }];
+					return [0, { time, theatreUrl, theatreName }];
 				case "an extra show appears for a given movie":
 					let date = await inquireDate();
 					let movieName = await inquireMovieName();
 					time = await inquireTime();
-					return [1, { time, movieName, date, theatreName }];
+					return [1, { time, movieName, date, theatreUrl, theatreName }];
 				default:
 					break;
 			}
@@ -194,7 +200,35 @@ let inquireDelete = async (getIds) => {
 		});
 };
 
-let inquire = async (addListener, getIds, removeListener, printTable, initialize, isrecur = false) => {
+let getTable = (data) => {
+	let table = [["Type", "Listener", "Target \nConsole", "Latest \nConsole", "Options", "Count"]];
+	for (let i = 0; i < data.length; i++) {
+		const ele = data[i];
+		let arr = [];
+		arr.push(ele.type);
+		arr.push(ele.listener);
+		arr.push(ele.latestConsole);
+		arr.push(ele.targetConsole);
+		let options = ``;
+		if (ele.type == "city") {
+			options = `city: ${ele.options.city} \nmovie: ${ele.options.movieName}`;
+			if (ele.options.date && ele.options.date != "") {
+				options += `\n date: ${ele.options.date} \nformat: ${ele.options.format}`;
+			}
+		} else {
+			options = `theatre: ${ele.options.theatreName} `;
+			if (ele.options.date && ele.options.date != "") {
+				options += `\nmovie: ${ele.options.movieName} \ndate: ${ele.options.date} \nformat: ${ele.options.format}`;
+			}
+		}
+		arr.push(options);
+		arr.push(ele.count);
+		table.push(arr);
+	}
+	return table;
+};
+
+let inquire = async (addListener, getIds, removeListener, getTableData, initialize, isrecur = false) => {
 	await inquirer
 		.prompt({
 			name: "choice",
@@ -210,7 +244,7 @@ let inquire = async (addListener, getIds, removeListener, printTable, initialize
 					// console.log(result);
 					await addListener(...result);
 					await initialize();
-					await inquire(addListener, getIds, removeListener, printTable, initialize, true);
+					await inquire(addListener, getIds, removeListener, getTableData, initialize, true);
 					break;
 				case "remove a listener":
 					// console.log("j");
@@ -218,17 +252,17 @@ let inquire = async (addListener, getIds, removeListener, printTable, initialize
 					// console.log(await result);
 					await removeListener(await result);
 					await initialize();
-					await inquire(addListener, getIds, removeListener, printTable, initialize, true);
+					await inquire(addListener, getIds, removeListener, getTableData, initialize, true);
 					break;
 				case "show the current listeners":
 					// console.log("hey");
-					await printTable();
+					console.log(table(getTable(await getTableData())));
 					await initialize();
-					await inquire(addListener, getIds, removeListener, printTable, initialize, true);
+					await inquire(addListener, getIds, removeListener, getTableData, initialize, true);
 					break;
 				case "start listeners":
 					await initialize();
-					await inquire(addListener, getIds, removeListener, printTable, initialize, true);
+					await inquire(addListener, getIds, removeListener, getTableData, initialize, true);
 					break;
 
 				default:

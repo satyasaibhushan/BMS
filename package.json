@@ -24,6 +24,7 @@
     "chalk-animation": "^1.3.0",
     "inquirer": "^8.2.2",
     "puppeteer": "^13.5.1",
-    "shortid": "^2.2.16"
+    "shortid": "^2.2.16",
+    "table": "^6.8.0"
   }
 }

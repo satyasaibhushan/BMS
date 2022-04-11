@@ -7,11 +7,11 @@ let ticks = 0;
 let updateTicks = () => {
 	let timer = setInterval(() => {
 		if (ticks > 10) {
-			console.log("Quit, Urgent :",ticks);
+			// console.log("Quit, Urgent :",ticks);
 			clearInterval(timer);
 			return;
 		}
-		console.log(ticks);
+		// console.log(ticks);
 		// ticks = 0;
 	}, 2000);
 };

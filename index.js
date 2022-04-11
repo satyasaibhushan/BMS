@@ -206,7 +206,7 @@ let addListeners = async (
 			case listenerNames[1][0]:
 				await checkForCondition(
 					async () => {
-						let a = await getDatesFromPage(options.theatreName);
+						let a = await getDatesFromPage(options.theatreUrl);
 						// console.log(a)
 						return await a.length;
 					},
@@ -227,7 +227,7 @@ let addListeners = async (
 				await checkForCondition(
 					async () =>
 						await getNoOfShowsFromDateAndMovieAndFormat(
-							options.theatreName,
+							options.theatreUrl,
 							options.movieName,
 							options.date,
 							options.format
@@ -259,7 +259,7 @@ await (async () => {
 		async (i, j, options) => await addListeners(i == 0 ? "city" : "theatre", listenerNames[i][j], options),
 		async () => await getFileData(),
 		async (id) => await removeListener(id),
-		async () => console.table(await getFileData()),
+		async () => await getFileData(),
 		async () => await initializeListeners()
 	);
 	// await initializeListeners();
@@ -273,11 +273,11 @@ await (async () => {
 	// 	time: 30000,
 	// });
 	// addListeners("theatre", listenerNames[1][0], {
-	// 	theatreName: "https://in.bookmyshow.com/buytickets/miraj-cinemas-newtown-kolkata/cinema-kolk-MCKK-MT/20220403",
+	// 	theatreUrl: "https://in.bookmyshow.com/buytickets/miraj-cinemas-newtown-kolkata/cinema-kolk-MCKK-MT/20220403",
 	// 	time: 5000,
 	// });
 	// addListeners("theatre", listenerNames[1][1], {
-	// 	theatreName: "https://in.bookmyshow.com/buytickets/miraj-cinemas-newtown-kolkata/cinema-kolk-MCKK-MT/20220403",
+	// 	theatreUrl: "https://in.bookmyshow.com/buytickets/miraj-cinemas-newtown-kolkata/cinema-kolk-MCKK-MT/20220403",
 	// 	movieName: "rrr",
 	// 	date: "3",
 	// 	time: 5000,

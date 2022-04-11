@@ -12,7 +12,7 @@ import {
 	getNoOfShowsFromDateAndMovieAndFormat,
 	checkForCondition,
 } from "./scraping.js";
-import { inquire, } from "./inquirer.js";
+import { getStringsFromListeners, getStringFromListener, inquire } from "./inquirer.js";
 
 let fileName = "data.json";
 //type: city (or) theatre
@@ -21,6 +21,9 @@ let fileName = "data.json";
 //targetConsole: the target value of the output of the function
 //options: opitons for the funciton; name, date, format, timePeriod
 //count: times the funciton has been called
+
+//maps the listeners to their strings, used to id them and avoid duplication
+let listenersStrings = [];
 
 let listenerNames = [
 	["does movie exist", "extra date appears", "extra show appears"],
@@ -88,12 +91,15 @@ const removeListener = async (id) => {
 };
 
 let initializeListeners = async () => {
+	// console.log("initializing");
 	let data = await getFileData();
-	if (data.length != 0) {
-		data.forEach(async (ele) => {
-			let { type, listener, latestConsole, targetConsole, options, count, id } = ele;
-			await addListeners(type, listener, options, latestConsole, targetConsole, id, false);
-		});
+	if ((await data.length) != 0) {
+		await Promise.all(
+			await data.map(async (ele) => {
+				let { type, listener, latestConsole, targetConsole, options, count, id } = ele;
+				await addListeners(type, listener, options, latestConsole, targetConsole, id, false);
+			})
+		);
 	}
 };
 
@@ -120,8 +126,14 @@ let addListeners = async (
 		obj.id = generatedId;
 		id = generatedId;
 		let arr = await getFileData();
-		arr.push(obj);
-		await updateFile(arr);
+		let string = getStringFromListener(obj, true);
+		if (listenersStrings.includes(string)) {
+			console.log("listener already exists");
+			return;
+		} else {
+			arr.push(obj);
+			await updateFile(arr);
+		}
 	}
 	if (type == "city") {
 		switch (listener) {
@@ -240,6 +252,9 @@ let addListeners = async (
 };
 
 await (async () => {
+	[...(await getFileData())].map((ele) => {
+		listenersStrings.push(getStringFromListener(ele, true));
+	});
 	await inquire(
 		async (i, j, options) => await addListeners(i == 0 ? "city" : "theatre", listenerNames[i][j], options),
 		async () => await getFileData(),

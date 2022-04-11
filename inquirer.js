@@ -1,18 +1,17 @@
 import inquirer from "inquirer";
 
-let getStringsFromListeners = (listeners) => {
-	return [
-		listeners.map((ele) => ele.id),
-		listeners.map(({ type, listener, options }) => {
-			let string = `${type} - ${listener}`;
-			for (const [key, value] of Object.entries(options)) {
-				string += ` - ${value}`;
-			}
-			return string;
-		}),
-	];
+let isValidKey = (key) => {
+	if (key == "city" || key == "movieName" || key == "date" || key == "format" || key == "theatreName") return true;
+	else return false;
 };
-
+let getStringFromListener = ({ type, listener, options }, isForDuplicateCheck = false) => {
+	let string = `${type} - ${listener}`;
+	for (const [key, value] of Object.entries(options)) {
+		if ((isForDuplicateCheck && isValidKey(key)) || !isForDuplicateCheck) string += ` - ${value}`;
+	}
+	return string;
+};
+let getStringsFromListeners = (listeners) => [listeners.map((ele) => ele.id), listeners.map(getStringFromListener)];
 let getChoices = (isrecur) => {
 	return isrecur
 		? ["show the current listeners"]
@@ -210,6 +209,7 @@ let inquire = async (addListener, getIds, removeListener, printTable, initialize
 					result = await inquireAdd();
 					// console.log(result);
 					await addListener(...result);
+					await initialize();
 					await inquire(addListener, getIds, removeListener, printTable, initialize, true);
 					break;
 				case "remove a listener":
@@ -217,11 +217,13 @@ let inquire = async (addListener, getIds, removeListener, printTable, initialize
 					result = await inquireDelete(getIds);
 					// console.log(await result);
 					await removeListener(await result);
+					await initialize();
 					await inquire(addListener, getIds, removeListener, printTable, initialize, true);
 					break;
 				case "show the current listeners":
 					// console.log("hey");
 					await printTable();
+					await initialize();
 					await inquire(addListener, getIds, removeListener, printTable, initialize, true);
 					break;
 				case "start listeners":
@@ -242,4 +244,4 @@ let inquire = async (addListener, getIds, removeListener, printTable, initialize
 		});
 };
 
-export { inquire };
+export { inquire, getStringsFromListeners, getStringFromListener };

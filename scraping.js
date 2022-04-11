@@ -2,6 +2,19 @@ import puppeteer from "puppeteer";
 import { getListener, updateListener, removeListener } from "./index.js";
 
 let cachedLinksForCity = {};
+let ticks = 0;
+
+let updateTicks = () => {
+	let timer = setInterval(() => {
+		if (ticks > 10) {
+			console.log("Quit, Urgent :",ticks);
+			clearInterval(timer);
+			return;
+		}
+		console.log(ticks);
+		// ticks = 0;
+	}, 2000);
+};
 
 let updateCacheForCity = (date, format, link, shouldUpdateLink = true) => {
 	if (cachedLinksForCity[`${date}+${format}`] == "" || !cachedLinksForCity[`${date}+${format}`])
@@ -53,6 +66,7 @@ async function autoScroll(page) {
 let launchPuppeteer = async (url, isHeadless = false, waitUntil = "domcontentloaded") => {
 	const browser = await puppeteer.launch({ headless: true });
 	const page = await browser.newPage();
+	ticks++;
 	await page.goto(url, { waitUntil: waitUntil });
 	await autoScroll(page);
 	await page._client.send("Page.stopLoading");
@@ -76,6 +90,7 @@ let getMoviesList = async (city) => {
 		return await images;
 	});
 	await browser.close();
+	ticks--;
 	// console.log(await movies);
 	return await movies;
 };
@@ -186,6 +201,7 @@ let getDatesFromMovie = async (city, movieName, cachedLink = "") => {
 
 	await page._client.send("Page.stopLoading");
 	await browser.close();
+	ticks--;
 	// return await page.url();
 	return [await getDatesFromPage(await page.url()), { cachedUrl: await page.url() }];
 };
@@ -208,6 +224,7 @@ let getFormats = async (movieLink) => {
 			])
 	);
 	await browser.close();
+	ticks--;
 	return formats;
 };
 
@@ -326,6 +343,7 @@ let getAllShowsInCityFromLink = async (link) => {
 		});
 	});
 	await browser.close();
+	ticks--;
 	// console.log(await shows);
 	return shows;
 };
@@ -360,6 +378,7 @@ let getMoviesFromTheatreDate = async (theatreDateUrl) => {
 		return list;
 	});
 	await browser.close();
+	ticks--;
 	return movies;
 };
 
@@ -435,6 +454,7 @@ export {
 };
 
 (async () => {
+	updateTicks();
 	// getMoviesList("kolkata");
 	// let result = await doesMovieExist("kharagpur", "kgf");
 	// let result = await getMoviesList("kharagpur");

@@ -20,6 +20,9 @@
   },
   "homepage": "https://github.com/satyasaibhushan/BMS#readme",
   "dependencies": {
+    "ansi": "^0.3.1",
+    "chalk-animation": "^1.3.0",
+    "inquirer": "^8.2.2",
     "puppeteer": "^13.5.1",
     "shortid": "^2.2.16"
   }

@@ -1,4 +1,7 @@
+#!/usr/bin/env node
 import fs from "fs";
+import chalkAnimation from "chalk-animation";
+import ansi from "ansi";
 import shortid from "shortid";
 
 import {
@@ -9,6 +12,7 @@ import {
 	getNoOfShowsFromDateAndMovieAndFormat,
 	checkForCondition,
 } from "./scraping.js";
+import { inquire, } from "./inquirer.js";
 
 let fileName = "data.json";
 //type: city (or) theatre
@@ -22,8 +26,10 @@ let listenerNames = [
 	["does movie exist", "extra date appears", "extra show appears"],
 	["extra date appears", "extra show appears"],
 ];
-
-let listeners = [];
+// let str = "Loading...";
+// const rainbow = chalkAnimation.rainbow(str);
+// rainbow.stop();
+let cursor = ansi(process.stdout);
 
 const writeToFile = async (filename, obj) => {
 	await fs.writeFileSync(filename, await JSON.stringify(obj), function (err) {
@@ -54,13 +60,13 @@ let getFileData = async () => {
 const getListener = async (id, isIndex) => {
 	let arr = await getFileData();
 	let listener = null;
-	arr.forEach((ele, i) => {
+	await arr.forEach((ele, i) => {
 		if (ele.id == id) listener = isIndex ? i : ele;
 	});
 
 	if (listener == null) {
 		console.log("listener does not exist");
-		return;
+		return null;
 	}
 	return listener;
 };
@@ -132,13 +138,24 @@ let addListeners = async (
 			case listenerNames[0][1]:
 				await checkForCondition(
 					async () => {
-						let a = await getDatesFromMovie(options.city, options.movieName);
-						return await a.length;
+						let cachedUrl;
+						if (!options.cachedData) {
+							let listener = await getListener(id);
+							if (await listener) {
+								options = listener.options;
+							}
+						}
+						if (options.cachedData) cachedUrl = options.cachedData.cachedUrl;
+						// console.log(cachedUrl);
+						if (listener.count % 10 == 0) cachedUrl = "";
+						let a = await getDatesFromMovie(options.city, options.movieName, cachedUrl);
+						return await [a[0].length, a[1]];
 					},
 					async (e) => {
 						let a = await getListener(id);
 						a = await a.targetConsole;
-						return (await a) && e > (await a);
+						if (!(await a) && a !== 0) return false;
+						return (await e) > (await a);
 					},
 					options.time,
 					console.log,
@@ -150,15 +167,16 @@ let addListeners = async (
 				await checkForCondition(
 					async () => {
 						let a = await getAllShowsInCity(options.city, options.movieName, options.date, options.format);
+						// console.log(await a);
 						a = await a.map((ele) => ele[1].length);
-						console.log(await a);
 						a = await a.reduce((a, b) => a + b, 0);
 						return await a;
 					},
 					async (e) => {
 						let a = await getListener(id);
 						a = await a.targetConsole;
-						return (await a) && e > (await a);
+						if (!(await a) && a !== 0) return false;
+						return (await e) > (await a);
 					},
 					options.time,
 					console.log,
@@ -183,7 +201,8 @@ let addListeners = async (
 					async (e) => {
 						let a = await getListener(id);
 						a = await a.targetConsole;
-						return (await a) && e > (await a);
+						if (!(await a) && a !== 0) return false;
+						return (await e) > (await a);
 					},
 					options.time,
 					console.log,
@@ -204,7 +223,8 @@ let addListeners = async (
 					async (e) => {
 						let a = await getListener(id);
 						a = await a.targetConsole;
-						return (await a) && e > (await a);
+						if (!(await a) && a !== 0) return false;
+						return (await e) > (await a);
 					},
 					options.time,
 					console.log,
@@ -219,9 +239,16 @@ let addListeners = async (
 	}
 };
 
-(async () => {
-	initializeListeners();
-	// addListeners("city", listenerNames[0][0], { city: "kharagpur", movieName: "kashmir", time: 5000 });
+await (async () => {
+	await inquire(
+		async (i, j, options) => await addListeners(i == 0 ? "city" : "theatre", listenerNames[i][j], options),
+		async () => await getFileData(),
+		async (id) => await removeListener(id),
+		async () => console.table(await getFileData()),
+		async () => await initializeListeners()
+	);
+	// await initializeListeners();
+	// addListeners("city", listenerNames[0][0], { city: "kharagpur", movieName: "kgf", time: 5000 });
 	// addListeners("city", listenerNames[0][1], { city: "kharagpur", movieName: "kashmir", time: 15000 });
 	// addListeners("city", listenerNames[0][2], {
 	// 	city: "kolkata",
@@ -241,4 +268,10 @@ let addListeners = async (
 	// 	time: 5000,
 	// });
 })();
+
+// setTimeout(async () => {
+// 	rainbow.replace(await getFileData());
+// }, 1000);
+//
+
 export { getListener, updateListener, removeListener };

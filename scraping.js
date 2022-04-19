@@ -2,6 +2,7 @@ import puppeteer from "puppeteer";
 import { getListener, updateListener, removeListener } from "./index.js";
 
 let cachedLinksForCity = {};
+let cachedDatesForMovie = {};
 let ticks = 0;
 
 let updateTicks = () => {
@@ -16,14 +17,18 @@ let updateTicks = () => {
 	}, 2000);
 };
 
-let updateCacheForCity = (date, format, link, shouldUpdateLink = true) => {
-	if (cachedLinksForCity[`${date}+${format}`] == "" || !cachedLinksForCity[`${date}+${format}`])
-		cachedLinksForCity[`${date}+${format}`] = { link: "", count: 0 };
-	if (shouldUpdateLink) cachedLinksForCity[`${date}+${format}`].link = link;
-	cachedLinksForCity[`${date}+${format}`].count++;
-	if (cachedLinksForCity[`${date}+${format}`].count % 5 == 0) {
-		cachedLinksForCity[`${date}+${format}`].link = "";
-		cachedLinksForCity[`${date}+${format}`].count = 0;
+let updateCacheForCity = (date, format, link, shouldUpdateLink = true, isForLinks = true) => {
+	let cacheRepo;
+	if (!isForLinks) cacheRepo = cachedDatesForMovie;
+	else cacheRepo = cachedLinksForCity;
+	// console.log(cacheRepo[`${date}+${format}`]);
+	if (cacheRepo[`${date}+${format}`] == "" || !cacheRepo[`${date}+${format}`])
+		cacheRepo[`${date}+${format}`] = { link: "", count: 0 };
+	if (shouldUpdateLink) cacheRepo[`${date}+${format}`].link = link;
+	cacheRepo[`${date}+${format}`].count++;
+	if (cacheRepo[`${date}+${format}`].count % 5 == 0) {
+		cacheRepo[`${date}+${format}`].link = "";
+		cacheRepo[`${date}+${format}`].count = 0;
 	}
 };
 
@@ -97,15 +102,22 @@ let getMoviesList = async (city) => {
 
 //type:city
 //uses above function to check if a movie exists in a city
-let doesMovieExist = async (city, movieName, getLink = false) => {
+let doesMovieExist = async (city, movieName) => {
 	let movies = await getMoviesList(city);
 	// let a = await movies;
 	// console.log(a);
-	movies = await movies.map(([ele, link]) => [ele.trim().toLowerCase().replace(/\s/g, ""), link]);
-	movieName = formatMovieName(movieName);
+	movies = await movies.map(([ele, link]) => [
+		ele
+			.trim()
+			.toLowerCase()
+			.replace(/\s/g, "")
+			.replace(/[^a-zA-Z ]/g, ""),
+		link,
+	]);
+	movieName = formatMovieName(movieName).replace(/[^a-zA-Z ]/g, "");
 	for (let i = 0; i < movies.length; i++) {
 		const movie = movies[i][0];
-		if (movie.includes(movieName)) return getLink ? movies[i][1] : true;
+		if (movie.includes(movieName)) return movies[i][1];
 	}
 	// console.log(await a, "asdfafa");
 	return false;
@@ -135,18 +147,24 @@ let getDatesFromPage = async (theatre) => {
 //type:city
 //Given a movie link in a city, it gets the dates links for that movie using the above function
 // this funciton also handles the case if the movie in the city has multiple formats
-let getDatesFromMovie = async (city, movieName, cachedLink = "") => {
-	if (cachedLink !== "" && cachedLink) {
-		// console.log(cachedLink);
+let getDatesFromMovie = async (city, movieName) => {
+	if (
+		cachedDatesForMovie[`${city}+${movieName}`] &&
+		cachedDatesForMovie[`${city}+${movieName}`].link != "" &&
+		cachedDatesForMovie[`${city}+${movieName}`].count != 0
+	) {
 		try {
-			let dates = await getDatesFromPage(cachedLink);
+			let dates = await getDatesFromPage(cachedDatesForMovie[`${city}+${movieName}`].link);
+			updateCacheForCity(city, movieName, "", false, false);
 			console.log(await dates.length);
 			if ((await dates.length) == 0) {
-			} else return [dates, { cachedUrl: cachedLink }];
-		} catch (e) {}
+			} else return dates;
+		} catch (e) {
+			console.log("error", e);
+		}
 	}
 
-	let movieLink = await doesMovieExist(city, movieName, true);
+	let movieLink = await doesMovieExist(city, movieName);
 	if (movieLink === false) {
 		console.log("movie does not exist", movieLink);
 		return [];
@@ -203,7 +221,9 @@ let getDatesFromMovie = async (city, movieName, cachedLink = "") => {
 	await browser.close();
 	ticks--;
 	// return await page.url();
-	return [await getDatesFromPage(await page.url()), { cachedUrl: await page.url() }];
+	let link = await page.url();
+	updateCacheForCity(city, movieName, link, true, false);
+	return await getDatesFromPage(link);
 };
 
 //type:city
@@ -253,7 +273,7 @@ let getAllShowsInCity = async (city, movieName, date = "", format = "", dates = 
 	if (isGivenLink) {
 		link = city;
 	} else {
-		let movieLink = await doesMovieExist(city, movieName, true);
+		let movieLink = await doesMovieExist(city, movieName);
 		if ((await movieLink) === false) {
 			console.log("movie does not exist");
 			return;
@@ -261,7 +281,6 @@ let getAllShowsInCity = async (city, movieName, date = "", format = "", dates = 
 
 		if (dates == "") {
 			dates = isGivenLink ? city : await getDatesFromMovie(city, movieName);
-			dates = dates[0];
 		}
 		if (!dates) return;
 		if (date != "") {
@@ -382,9 +401,7 @@ let getMoviesFromTheatreDate = async (theatreDateUrl) => {
 	return movies;
 };
 
-//type:theatre
-//given a theatres date, this function gets the no.of shows with given date & format
-let getNoOfShowsFromDateAndMovieAndFormat = async (theatre, movieName, date, format = "") => {
+let getTheatreDateUrl = async(theatre,date) => {
 	let dates = await getDatesFromPage(theatre);
 	let theatreDateUrl = "";
 
@@ -396,43 +413,72 @@ let getNoOfShowsFromDateAndMovieAndFormat = async (theatre, movieName, date, for
 			break;
 		}
 	}
+	return theatreDateUrl;
+};
+
+//type:theatre
+//given a theatres date, this function gets the no.of shows with given date & format
+let getShowsFromDateAndMovieAndFormat = async (theatre, movieName, date, format = "") => {
+	if (format !== "")
+		format = format
+			.trim()
+			.toLowerCase()
+			.split(" ")
+			.join("-")
+			.replace(/[^a-zA-Z-\d ]/g, "");
+	
+
+	let theatreDateUrl = await getTheatreDateUrl(theatre,date);
 	if (theatreDateUrl == "") {
 		console.log("invalid date");
 		return 0;
 	}
 	let movies = await getMoviesFromTheatreDate(theatreDateUrl);
-	movieName = formatMovieName(movieName);
+	movieName = formatMovieName(movieName).replace(/[^a-zA-Z ]/g, "");
 	let count = 0;
-
+	let arr = [];
 	movies.forEach((ele) => {
-		if (formatMovieName(ele[0]).includes(movieName)) {
-			if (format == "") count += ele[2].length;
-			else if (ele[1] == format) count += ele[2].length;
+		if (
+			formatMovieName(ele[0])
+				.replace(/[^a-zA-Z ]/g, "")
+				.includes(movieName)
+		) {
+			if (format == "") arr.push(...ele[2]);
+			else if (
+				ele[1]
+					.trim()
+					.toLowerCase()
+					.split(" ")
+					.join("-")
+					.replace(/[^a-zA-Z-\d ]/g, "") == format
+			)
+				arr.push(...ele[2]);
 		}
 	});
-	return count;
+	return arr;
 };
 
 let checkForCondition = async (func, expression, time, notify, listenerName, id) => {
 	let timer = setInterval(
 		async () => {
 			let result = await func();
-			let cachedData;
-			if (Array.isArray(result)) (cachedData = result[1]), (result = result[0]);
+			// let cachedData;
+			// if (Array.isArray(result)) (cachedData = result[1]), (result = result[0]);
 
-			notify(result);
+			console.log(result);
 			let listener = await getListener(id);
 			if ((await listener) == null) {
 				clearInterval(timer);
 				return;
 			}
-			listener.options.cachedData = cachedData;
+			// listener.options.cachedData = cachedData;
 			listener.latestConsole = await result;
 
 			listener.count++;
 			// console.log(listener);
 			if (await expression(result)) {
 				console.log("condition met, exiting");
+				await notify();
 				await removeListener(id);
 				clearInterval(timer);
 			} else {
@@ -449,8 +495,9 @@ export {
 	getDatesFromMovie,
 	getAllShowsInCity,
 	getDatesFromPage,
-	getNoOfShowsFromDateAndMovieAndFormat,
+	getShowsFromDateAndMovieAndFormat,
 	checkForCondition,
+	getTheatreDateUrl
 };
 
 (async () => {
@@ -464,14 +511,18 @@ export {
 	// let result = await getMoviesFromDate(
 	// 	"https://in.bookmyshow.com/buytickets/bombay-cineplex-kharagpur/cinema-kgpr-BCKR-MT/20220312"
 	// );
-	// let result = await getNoOfShowsFromDateAndMovieAndFormat(
-	// 	"https://in.bookmyshow.com/buytickets/bombay-cineplex-kharagpur/cinema-kgpr-BCKR-MT/20220312",
-	// 	"kashmir",
-	// 	"Hindi, 2D"
+	// let result = await getShowsFromDateAndMovieAndFormat(
+	// 	"https://in.bookmyshow.com/buytickets/bombay-cineplex-kharagpur/cinema-kgpr-BCKR-MT/20220419",
+	// 	"kgf",
+	// 	"20",
+	// 	"hindi-2d"
 	// );
 	// let result = await getDatesFromMovie("Kharagpur", "rrr");
-	// let result = await getAllShowsInCity("kolkata", "rrr", "  12 ", "hindi-2d");
+	// let result = await getAllShowsInCity("kharagpur", "rrr", "  19 ", "hindi-2d");
 	// let result = await getFormats("https://in.bookmyshow.com/buytickets/rrr-kharagpur/movie-kgpr-ET00320580-MT/20220331");
+	// let result = getMoviesFromTheatreDate(
+	// 	"https://in.bookmyshow.com/buytickets/bombay-cineplex-kharagpur/cinema-kgpr-BCKR-MT/20220419"
+	// );
 	// console.log(await result);
 	// await checkForCondition(() => doesMovieExist("kharagpur", "rrr"), true, 5000, console.log);
 })();

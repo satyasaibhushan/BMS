@@ -9,10 +9,12 @@ import {
 	getDatesFromMovie,
 	getAllShowsInCity,
 	getDatesFromPage,
-	getNoOfShowsFromDateAndMovieAndFormat,
+	getShowsFromDateAndMovieAndFormat,
 	checkForCondition,
+	getTheatreDateUrl,
 } from "./scraping.js";
 import { getStringsFromListeners, getStringFromListener, inquire } from "./inquirer.js";
+import { notify } from "./notify.js";
 
 let fileName = "data.json";
 //type: city (or) theatre
@@ -33,6 +35,21 @@ let listenerNames = [
 // const rainbow = chalkAnimation.rainbow(str);
 // rainbow.stop();
 let cursor = ansi(process.stdout);
+
+let getDifferent = (target, original) => {
+	for (let i = 0; i < target.length; i++) {
+		const ele = target[i];
+		let flag = 0;
+		for (let j = 0; j < original.length; j++) {
+			const ele2 = original[j];
+			if (ele2[0] == ele[0]) {
+				flag = 1;
+				break;
+			}
+		}
+		if (flag == 0) return ele;
+	}
+};
 
 const writeToFile = async (filename, obj) => {
 	await fs.writeFileSync(filename, await JSON.stringify(obj), function (err) {
@@ -140,7 +157,21 @@ let addListeners = async (
 			case listenerNames[0][0]:
 				await checkForCondition(
 					() => doesMovieExist(options.city, options.movieName),
-					(e) => e,
+					async (e) => {
+						if (e !== false) {
+							let listener = await getListener(id);
+							if (await listener) {
+								// listener.redirectData = e;
+								await notify(
+									await listener.options.emails,
+									`A new movie (${await listener.options.movieName}) 
+									you want has appeared in a city (${await listener.options.city})`,
+									`Here's the link to the new movie: ${e}`
+								);
+							}
+							return true;
+						} else return false;
+					},
 					options.time,
 					console.log,
 					"city/doesMovieExist",
@@ -149,25 +180,27 @@ let addListeners = async (
 				break;
 			case listenerNames[0][1]:
 				await checkForCondition(
-					async () => {
-						let cachedUrl;
-						if (!options.cachedData) {
-							let listener = await getListener(id);
-							if (await listener) {
-								options = listener.options;
-							}
-						}
-						if (options.cachedData) cachedUrl = options.cachedData.cachedUrl;
-						// console.log(cachedUrl);
-						if (listener.count % 10 == 0) cachedUrl = "";
-						let a = await getDatesFromMovie(options.city, options.movieName, cachedUrl);
-						return await [a[0].length, a[1]];
-					},
+					async () => await getDatesFromMovie(options.city, options.movieName),
 					async (e) => {
 						let a = await getListener(id);
 						a = await a.targetConsole;
-						if (!(await a) && a !== 0) return false;
-						return (await e) > (await a);
+						if (!((await a) && a.length !== 0)) return false;
+						if (e.length > (await a.length)) {
+							let listener = await getListener(id);
+							if (await listener) {
+								let [redirectDate, redirectLink] = getDifferent(e, a);
+								// listener.redirectData = [...];
+								// console.log(e);
+								await notify(
+									await listener.options.emails,
+									`A new Date (${await redirectDate}) 
+									you want has appeared for a movie (${await listener.options.movieName})
+									in a theatre (${await listener.options.city})`,
+									`Here's the link to the new date: ${redirectLink}`
+								);
+							}
+							return true;
+						} else return false;
 					},
 					options.time,
 					console.log,
@@ -180,15 +213,71 @@ let addListeners = async (
 					async () => {
 						let a = await getAllShowsInCity(options.city, options.movieName, options.date, options.format);
 						// console.log(await a);
-						a = await a.map((ele) => ele[1].length);
-						a = await a.reduce((a, b) => a + b, 0);
 						return await a;
 					},
 					async (e) => {
 						let a = await getListener(id);
 						a = await a.targetConsole;
-						if (!(await a) && a !== 0) return false;
-						return (await e) > (await a);
+						if (!((await a) && a !== null)) return false;
+						let b = await a.map((ele) => ele[1].length);
+						b = await b.reduce((x, y) => x + y, 0);
+						let c = await e.map((ele) => ele[1].length);
+						c = await c.reduce((x, y) => x + y, 0);
+						if (c > (await b)) {
+							let redirectTheatre, redirectTheatreLink, redirectShow, redirectShowLink;
+							for (let i = 0; i < e.length; i++) {
+								const ele = e[i];
+								let flag = 0;
+								for (let j = 0; j < a.length; j++) {
+									const ele2 = a[j];
+									if (ele2[0][0] == ele[0][0]) {
+										if (ele[1].length > ele2[1].length) {
+											console.log("show increase");
+											//a show increased in this theatre
+											let x = getDifferent(ele[1], ele2[1]);
+											(redirectShow = x[0]), (redirectShowLink = x[1]);
+											// [redirectShow, redirectShowLink] = getDifferent(ele[1], ele2[1]);
+											(redirectTheatre = ele[0][0]), (redirectTheatreLink = ele[0][1]);
+
+											break;
+										}
+										flag = 1;
+									}
+								}
+
+								if (flag == 0) {
+									//a theatre is increased
+									(redirectTheatre = ele[0][0]), (redirectTheatreLink = ele[0][1]);
+									break;
+								}
+							}
+							let listener = await getListener(id);
+							if (redirectShow) {
+								// console.log("redirect show", redirectShow);
+								await notify(
+									await listener.options.emails,
+									`A new Show (${await redirectShow})
+									you want has appeared for a movie (${await listener.options.movieName})
+									on date (${await listener.options.date}) and format (${await listener.options.format})
+									in a city (${await listener.options.city})`,
+									`Here's the link to the show: ${redirectShowLink} \n  
+									Here's the link to the theatre(${redirectTheatre}): ${redirectTheatreLink} `
+								);
+							} else {
+								await notify(
+									await listener.options.emails,
+									`A new Theatre (${await redirectTheatre})
+									you want has appeared for a movie (${await listener.options.movieName})
+									on date (${await listener.options.date}) and format (${await listener.options.format})
+									in a city (${await listener.options.city})`,
+									`Here's the link to that theatre: ${redirectTheatreLink} `
+								);
+							}
+							// listener.redirectData = [...];
+							// console.log(e);
+
+							return true;
+						} else return false;
 					},
 					options.time,
 					console.log,
@@ -205,16 +294,28 @@ let addListeners = async (
 		switch (listener) {
 			case listenerNames[1][0]:
 				await checkForCondition(
-					async () => {
-						let a = await getDatesFromPage(options.theatreUrl);
-						// console.log(a)
-						return await a.length;
-					},
+					async () => await getDatesFromPage(options.theatreUrl),
+
 					async (e) => {
 						let a = await getListener(id);
 						a = await a.targetConsole;
-						if (!(await a) && a !== 0) return false;
-						return (await e) > (await a);
+						if (!((await a) && a !== 0)) return false;
+						if (e.length > (await a.length)) {
+							let listener = await getListener(id);
+							if (await listener) {
+								let [redirectDate, redirectLink] = getDifferent(e, a);
+
+								// listener.redirectData = [...];
+								// console.log(e);
+								await notify(
+									await listener.options.emails,
+									`A new Date (${await redirectDate}) 
+									you want has appeared in a theatre (${await listener.options.theatreName})`,
+									`Here's a link to the new date: ${redirectLink}`
+								);
+							}
+							return true;
+						} else return false;
 					},
 					options.time,
 					console.log,
@@ -226,7 +327,7 @@ let addListeners = async (
 			case listenerNames[1][1]:
 				await checkForCondition(
 					async () =>
-						await getNoOfShowsFromDateAndMovieAndFormat(
+						await getShowsFromDateAndMovieAndFormat(
 							options.theatreUrl,
 							options.movieName,
 							options.date,
@@ -235,8 +336,26 @@ let addListeners = async (
 					async (e) => {
 						let a = await getListener(id);
 						a = await a.targetConsole;
-						if (!(await a) && a !== 0) return false;
-						return (await e) > (await a);
+						if (!((await a) && a !== 0)) return false;
+						if (e.length > (await a.length)) {
+							let listener = await getListener(id);
+							if (await listener) {
+								let redirectShow = e.filter((ele) => !a.includes(ele))[0];
+								let theatreDateUrl = await getTheatreDateUrl(listener.options.theatreUrl, listener.options.date);
+
+								// // listener.redirectData = [...];
+								// console.log(theatreDateUrl);
+								await notify(
+									await listener.options.emails,
+									`A new Show (${await redirectShow})
+									you want for a movie (${await listener.options.movieName})
+									on date (${await listener.options.date}) and format (${await listener.options.format})
+									has appeared in a theatre (${await listener.options.theatreName})`,
+									`Here's a link to the date of the theatre: ${theatreDateUrl}`
+								);
+							}
+							return true;
+						} else return false;
 					},
 					options.time,
 					console.log,

@@ -28,6 +28,15 @@ let inquireTime = async () => {
 	if (time < 5000) time = 5000;
 	return time;
 };
+let inquireEmails = async () => {
+	let { emails } = await inquirer.prompt({
+		name: "emails",
+		type: "input",
+		message: "Enter the emails with a seperated comma",
+	});
+	if (emails == "") emails = "satyasaibhushan@gmail.com";
+	return emails;
+};
 
 let inquireDate = async () => {
 	let { date } = await inquirer.prompt({
@@ -77,18 +86,22 @@ let inquireAddCity = async () => {
 		})
 		.then(async ({ cityListener: answers }) => {
 			let time;
+			let emails;
 			switch (answers) {
 				case "a movie to appear":
 					time = await inquireTime();
-					return [0, { time, movieName, city }];
+					emails = await inquireEmails();
+					return [0, { time, movieName, city, emails }];
 				case "an extra date to appear for a given movie":
 					time = await inquireTime();
-					return [1, { time, movieName, city }];
+					emails = await inquireEmails();
+					return [1, { time, movieName, city, emails }];
 				case "an extra show appears for a given movie":
 					let format = await inquireFormat();
 					let date = await inquireDate();
 					time = await inquireTime();
-					return [2, { time, movieName, city, date, format }];
+					emails = await inquireEmails();
+					return [2, { time, movieName, city, date, format, emails }];
 				default:
 					break;
 			}
@@ -124,15 +137,19 @@ let inquireAddTheatre = async () => {
 		})
 		.then(async ({ theatreListener: answers }) => {
 			let time;
+			let emails;
 			switch (answers) {
 				case "an extra date to appear for a given theatre":
 					time = await inquireTime();
-					return [0, { time, theatreUrl, theatreName }];
+					emails = await inquireEmails();
+					return [0, { time, theatreUrl, theatreName, emails }];
 				case "an extra show appears for a given movie":
 					let date = await inquireDate();
 					let movieName = await inquireMovieName();
+					let format = await inquireFormat();
 					time = await inquireTime();
-					return [1, { time, movieName, date, theatreUrl, theatreName }];
+					emails = await inquireEmails();
+					return [1, { time, movieName, date, theatreUrl, theatreName,format, emails }];
 				default:
 					break;
 			}

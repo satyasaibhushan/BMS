@@ -1,32 +1,34 @@
 {
-  "name": "bms",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "type": "module",
-  "scripts": {
-    "start": "node src/index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/satyasaibhushan/BMS.git"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/satyasaibhushan/BMS/issues"
-  },
-  "homepage": "https://github.com/satyasaibhushan/BMS#readme",
-  "dependencies": {
-    "ansi": "^0.3.1",
-    "chalk-animation": "^1.3.0",
-    "dotenv": "^16.0.0",
-    "inquirer": "^8.2.2",
-    "nodemailer": "^6.7.3",
-    "puppeteer": "^13.5.1",
-    "shortid": "^2.2.16",
-    "table": "^6.8.0"
-  }
+	"name": "bms",
+	"version": "1.0.0",
+	"description": "",
+	"main": "index.js",
+	"type": "module",
+	"scripts": {
+		"start": "node src/index.js",
+		"test": "echo \"Error: no test specified\" && exit 1",
+		"ssh-transfer": "scp -r /Users/satyasaibhushan/Documents/Coding/WebDev/full-stack/BMS/  saibhushan@jasmine:/home/saibhushan/BMS "
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/satyasaibhushan/BMS.git"
+	},
+	"keywords": [],
+	"author": "",
+	"license": "ISC",
+	"bugs": {
+		"url": "https://github.com/satyasaibhushan/BMS/issues"
+	},
+	"homepage": "https://github.com/satyasaibhushan/BMS#readme",
+	"dependencies": {
+		"ansi": "^0.3.1",
+		"chalk-animation": "^1.3.0",
+		"dotenv": "^16.0.0",
+		"inquirer": "^8.2.2",
+		"node-fetch": "^3.2.3",
+		"nodemailer": "^6.7.3",
+		"puppeteer": "^13.5.1",
+		"shortid": "^2.2.16",
+		"table": "^6.8.0"
+	}
 }

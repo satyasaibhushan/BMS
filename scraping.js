@@ -1,14 +1,23 @@
 import puppeteer from "puppeteer";
 import { getListener, updateListener, removeListener } from "./index.js";
+import { notifyViaEmail, notifyViaSms } from "./notify.js";
 
 let cachedLinksForCity = {};
 let cachedDatesForMovie = {};
 let ticks = 0;
 
-let updateTicks = () => {
-	let timer = setInterval(() => {
+let notify = async (emails, sms, subject, body) => {
+	if (emails) await notifyViaEmail(emails, subject, body);
+	if (sms) await notifyViaSms(sms, subject, body);
+};
+
+let updateTicks = async () => {
+	let timer = setInterval(async () => {
 		if (ticks > 10) {
-			// console.log("Quit, Urgent :",ticks);
+			// console.log("Quit, Urgent :", ticks);
+			await notifyViaEmail("satyasaibhushan@gmail.com", "process quit", "Please check!!");
+			await notifyViaSms("7970070007", "process quit", "Please check!!");
+			process.exit();
 			clearInterval(timer);
 			return;
 		}
@@ -140,7 +149,8 @@ let getDatesFromPage = async (theatre) => {
 		});
 		return lists;
 	});
-	browser.close();
+	await browser.close();
+	ticks--;
 	return links;
 };
 
@@ -401,7 +411,7 @@ let getMoviesFromTheatreDate = async (theatreDateUrl) => {
 	return movies;
 };
 
-let getTheatreDateUrl = async(theatre,date) => {
+let getTheatreDateUrl = async (theatre, date) => {
 	let dates = await getDatesFromPage(theatre);
 	let theatreDateUrl = "";
 
@@ -426,9 +436,8 @@ let getShowsFromDateAndMovieAndFormat = async (theatre, movieName, date, format 
 			.split(" ")
 			.join("-")
 			.replace(/[^a-zA-Z-\d ]/g, "");
-	
 
-	let theatreDateUrl = await getTheatreDateUrl(theatre,date);
+	let theatreDateUrl = await getTheatreDateUrl(theatre, date);
 	if (theatreDateUrl == "") {
 		console.log("invalid date");
 		return 0;
@@ -458,7 +467,7 @@ let getShowsFromDateAndMovieAndFormat = async (theatre, movieName, date, format 
 	return arr;
 };
 
-let checkForCondition = async (func, expression, time, notify, listenerName, id) => {
+let checkForCondition = async (func, expression, time, notif, listenerName, id) => {
 	let timer = setInterval(
 		async () => {
 			let result = await func();
@@ -475,10 +484,10 @@ let checkForCondition = async (func, expression, time, notify, listenerName, id)
 			listener.latestConsole = await result;
 
 			listener.count++;
-			// console.log(listener);
-			if (await expression(result)) {
+			let [value, ...subj] = await expression(result);
+			if (await value) {
 				console.log("condition met, exiting");
-				await notify();
+				await notify(listener.options.emails, listener.options.sms, subj);
 				await removeListener(id);
 				clearInterval(timer);
 			} else {
@@ -497,11 +506,11 @@ export {
 	getDatesFromPage,
 	getShowsFromDateAndMovieAndFormat,
 	checkForCondition,
-	getTheatreDateUrl
+	getTheatreDateUrl,
 };
 
 (async () => {
-	updateTicks();
+	await updateTicks();
 	// getMoviesList("kolkata");
 	// let result = await doesMovieExist("kharagpur", "kgf");
 	// let result = await getMoviesList("kharagpur");

@@ -1,11 +1,11 @@
 import nodemailer from "nodemailer";
 import dotenv from "dotenv";
+import fetch from "node-fetch";
 dotenv.config();
 
-let notify = async (toEmails, subject = "", html = "") => {
+let notifyViaEmail = async (recievers, subject = "", html = "") => {
 	if (subject == "") subject = "You have a notification from the BMS app";
 	if (html == "") html = "<b>Hello world?</b>";
-	// console.log(process.env.MailID);
 
 	// create reusable transporter object using the default SMTP transport
 	let transporter = nodemailer.createTransport({
@@ -22,7 +22,7 @@ let notify = async (toEmails, subject = "", html = "") => {
 	transporter.sendMail(
 		{
 			from: `"BMS mailer" <${process.env.MailID}>`, // sender address
-			to: toEmails, // list of receivers
+			to: recievers, // list of receivers
 			subject, // Subject line
 			text: "Test", // plain text body
 			html: html, // html body
@@ -40,7 +40,17 @@ let notify = async (toEmails, subject = "", html = "") => {
 	// Preview only available when sending through an Ethereal account
 	// console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info));
 };
+let notifyViaSms = async (recievers, subject = "", html = "") => {
+	//fast2sms cost 6k per year
+	// const response = await fetch(
+	// 	`\n https://www.fast2sms.com/dev/bulkV2?authorization=${process.env.SmsApiKey}
+	// 	&route=v3&sender_id=${process.env.SmsSenderId}&message=${subject}\n ${html}&language=english&flash=0&numbers=${recievers}`,
+	// 	{
+	// 		headers: { "cache-control": "no-cache" },
+	// 	}
+	// );
+	// const data = await response.json();
 
-// await notify("satyasaibhushan@gmail.com");
-
-export { notify };
+	// console.log(data);
+};
+export { notifyViaEmail, notifyViaSms };

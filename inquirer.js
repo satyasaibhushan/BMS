@@ -25,17 +25,57 @@ let inquireTime = async () => {
 		type: "input",
 		message: "Enter the frequency of listener in ms",
 	});
+	if (time == "") time = 10000;
 	if (time < 5000) time = 5000;
 	return time;
 };
 let inquireEmails = async () => {
-	let { emails } = await inquirer.prompt({
-		name: "emails",
-		type: "input",
-		message: "Enter the emails with a seperated comma",
-	});
-	if (emails == "") emails = "satyasaibhushan@gmail.com";
-	return emails;
+	let emailsOut = await inquirer
+		.prompt({
+			name: "ifEmail",
+			type: "list",
+			message: "Do you want to enable email notifications?",
+			choices: ["Yes", "No"],
+		})
+		.then(async ({ ifEmail }) => {
+			if (ifEmail == "Yes") {
+				let { emails } = await inquirer.prompt({
+					name: "emails",
+					type: "input",
+					message: "Enter the emails with a seperated comma",
+				});
+				if (emails == "") emails = "satyasaibhushan@gmail.com";
+				return emails;
+			} else {
+				return;
+			}
+		});
+	return emailsOut;
+};
+
+let inquireSms = async () => {
+	return;
+	let smsOut = await inquirer
+		.prompt({
+			name: "ifSms",
+			type: "list",
+			message: "Do you want to enable sms notifications?",
+			choices: ["Yes", "No"],
+		})
+		.then(async ({ ifSms }) => {
+			if (ifSms == "Yes") {
+				let { numbers } = await inquirer.prompt({
+					name: "numbers",
+					type: "input",
+					message: "Enter the mobile numbers with a seperated comma ",
+				});
+				if (numbers == "") numbers = "7970070007";
+				return numbers;
+			} else {
+				return;
+			}
+		});
+	return smsOut;
 };
 
 let inquireDate = async () => {
@@ -87,21 +127,25 @@ let inquireAddCity = async () => {
 		.then(async ({ cityListener: answers }) => {
 			let time;
 			let emails;
+			let sms;
 			switch (answers) {
 				case "a movie to appear":
 					time = await inquireTime();
 					emails = await inquireEmails();
-					return [0, { time, movieName, city, emails }];
+					sms = await inquireSms();
+					return [0, { time, movieName, city, emails, sms }];
 				case "an extra date to appear for a given movie":
 					time = await inquireTime();
 					emails = await inquireEmails();
-					return [1, { time, movieName, city, emails }];
+					sms = await inquireSms();
+					return [1, { time, movieName, city, emails, sms }];
 				case "an extra show appears for a given movie":
 					let format = await inquireFormat();
 					let date = await inquireDate();
 					time = await inquireTime();
 					emails = await inquireEmails();
-					return [2, { time, movieName, city, date, format, emails }];
+					sms = await inquireSms();
+					return [2, { time, movieName, city, date, format, emails, sms }];
 				default:
 					break;
 			}
@@ -138,18 +182,21 @@ let inquireAddTheatre = async () => {
 		.then(async ({ theatreListener: answers }) => {
 			let time;
 			let emails;
+			let sms;
 			switch (answers) {
 				case "an extra date to appear for a given theatre":
 					time = await inquireTime();
 					emails = await inquireEmails();
-					return [0, { time, theatreUrl, theatreName, emails }];
+					sms = await inquireSms();
+					return [0, { time, theatreUrl, theatreName, emails, sms }];
 				case "an extra show appears for a given movie":
 					let date = await inquireDate();
 					let movieName = await inquireMovieName();
 					let format = await inquireFormat();
 					time = await inquireTime();
 					emails = await inquireEmails();
-					return [1, { time, movieName, date, theatreUrl, theatreName,format, emails }];
+					sms = await inquireSms();
+					return [1, { time, movieName, date, theatreUrl, theatreName, format, emails, sms }];
 				default:
 					break;
 			}
@@ -218,14 +265,19 @@ let inquireDelete = async (getIds) => {
 };
 
 let getTable = (data) => {
-	let table = [["Type", "Listener", "Target \nConsole", "Latest \nConsole", "Options", "Count"]];
+	let table = [["Type", "Listener", "Latest \nConsole", "Target \nConsole", "Options", "Count"]];
 	for (let i = 0; i < data.length; i++) {
 		const ele = data[i];
 		let arr = [];
 		arr.push(ele.type);
 		arr.push(ele.listener);
-		arr.push(ele.latestConsole);
-		arr.push(ele.targetConsole);
+		if (ele.latestConsole == false) {
+			arr.push(false);
+			arr.push(true);
+		} else {
+			ele.latestConsole ? arr.push(ele.latestConsole.length) : arr.push(null);
+			ele.targetConsole ? arr.push(`> ${ele.targetConsole.length}`) : arr.push(null);
+		}
 		let options = ``;
 		if (ele.type == "city") {
 			options = `city: ${ele.options.city} \nmovie: ${ele.options.movieName}`;

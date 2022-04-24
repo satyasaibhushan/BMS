@@ -487,7 +487,7 @@ let checkForCondition = async (func, expression, time, notif, listenerName, id) 
 			let [value, ...subj] = await expression(result);
 			if (await value) {
 				console.log("condition met, exiting");
-				await notify(listener.options.emails, listener.options.sms, subj);
+				await notify(listener.options.emails, listener.options.sms, ...subj);
 				await removeListener(id);
 				clearInterval(timer);
 			} else {

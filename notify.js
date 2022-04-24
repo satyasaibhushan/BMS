@@ -23,7 +23,7 @@ let notifyViaEmail = async (recievers, subject = "", html = "") => {
 		{
 			from: `"BMS mailer" <${process.env.MailID}>`, // sender address
 			to: recievers, // list of receivers
-			subject, // Subject line
+			subject: subject, // Subject line
 			text: "Test", // plain text body
 			html: html, // html body
 		},
@@ -50,7 +50,6 @@ let notifyViaSms = async (recievers, subject = "", html = "") => {
 	// 	}
 	// );
 	// const data = await response.json();
-
 	// console.log(data);
 };
 export { notifyViaEmail, notifyViaSms };

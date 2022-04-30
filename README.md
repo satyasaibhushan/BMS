@@ -122,12 +122,15 @@ and then add the listener manager in `index.js` with the matching function and t
   In this scenario, the name of ssh is `jarvis` which can be changed in `package.json` scripts
   2. After connecting, we move the `node_modules` folder in the local computer away to another location to store it. 
   3. Then, we can transfer the files using `ssh-transfer` command. After all the required files are transfered, we can bring back the `node_modules` folder.
-  4. After the code is in the VM, add/ manage the listeners by running `managing.js` file.
-  5. After the listeners are as required, we can run the listeners by running the `start.js`.
-  6. After confirming the app is running as required, we can press `ctrl+z` to push the process to background
-  7. Then run the `bg %n` / `bg %1` command to re-run the process but in background.
+  4. Then, run `npm i` in the BMS folder in VM.
+  5. After the code is in the VM, add/ manage the listeners by running `managing.js` file.
+  6. After the listeners are as required, we can run the listeners by running the `start.js`.
+  7. After confirming the app is running as required, we can press `ctrl+z` to push the process to background
+  8. Then run the `bg %n` / `bg %1` command to re-run the process but in background.
   
   To check the listeners, we can either run `manage.js` and then check the count or  we can run `vi data.json` and see ourselves.
+  
+  To check the node processes running right now, use `ps -e|grep node` command. And to kill all node processes, use `pkill -f node` command.
   
   # Scraping techniques used:
    

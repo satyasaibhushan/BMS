@@ -11,7 +11,7 @@ import {
 	checkForCondition,
 	getTheatreDateUrl,
 } from "./scraping.js";
-import { getStringsFromListeners, getStringFromListener, inquire } from "./inquirer.js";
+import { getStringFromListener } from "./inquirer.js";
 
 let fileName = "data.json";
 //type: city (or) theatre
@@ -272,7 +272,7 @@ let addListeners = async (
 					async (e) => {
 						let a = await getListener(id);
 						a = await a.targetConsole;
-						if (!((await a) && a !== 0)) return false;
+						if (!((await a) && a !== 0)) return [false];
 						if (e.length > (await a.length)) {
 							let listener = await getListener(id);
 							let [redirectDate, redirectLink] = getDifferent(e, a);
@@ -328,41 +328,12 @@ let addListeners = async (
 };
 
 await (async () => {
+	process.on("beforeExit", (code) => {
+		console.log("Process beforeExit event with code: ", code);
+	});
 	[...(await getFileData())].map((ele) => {
 		listenersStrings.push(getStringFromListener(ele, true));
 	});
-	await inquire(
-		async (i, j, options) => await addListeners(i == 0 ? "city" : "theatre", listenerNames[i][j], options),
-		async () => await getFileData(),
-		async (id) => await removeListener(id),
-		async () => await getFileData(),
-		async () => await initializeListeners()
-	);
-	// await initializeListeners();
-	// addListeners("city", listenerNames[0][0], { city: "kharagpur", movieName: "kgf", time: 5000 });
-	// addListeners("city", listenerNames[0][1], { city: "kharagpur", movieName: "kashmir", time: 15000 });
-	// addListeners("city", listenerNames[0][2], {
-	// 	city: "kolkata",
-	// 	movieName: "rrr",
-	// 	date: "2",
-	// 	format: "hindi-2d",
-	// 	time: 30000,
-	// });
-	// addListeners("theatre", listenerNames[1][0], {
-	// 	theatreUrl: "https://in.bookmyshow.com/buytickets/miraj-cinemas-newtown-kolkata/cinema-kolk-MCKK-MT/20220403",
-	// 	time: 5000,
-	// });
-	// addListeners("theatre", listenerNames[1][1], {
-	// 	theatreUrl: "https://in.bookmyshow.com/buytickets/miraj-cinemas-newtown-kolkata/cinema-kolk-MCKK-MT/20220403",
-	// 	movieName: "rrr",
-	// 	date: "3",
-	// 	time: 5000,
-	// });
 })();
 
-// setTimeout(async () => {
-// 	rainbow.replace(await getFileData());
-// }, 1000);
-//
-
-export { getListener, updateListener, removeListener };
+export { getFileData, getListener, updateListener, removeListener, initializeListeners, addListeners,listenerNames };

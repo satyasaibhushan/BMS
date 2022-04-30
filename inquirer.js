@@ -47,7 +47,7 @@ let inquireEmails = async () => {
 				if (emails == "") emails = "satyasaibhushan@gmail.com";
 				return emails;
 			} else {
-				return;
+				return null;
 			}
 		});
 	return emailsOut;
@@ -132,6 +132,7 @@ let inquireAddCity = async () => {
 				case "a movie to appear":
 					time = await inquireTime();
 					emails = await inquireEmails();
+					// console.log(await emails);
 					sms = await inquireSms();
 					return [0, { time, movieName, city, emails, sms }];
 				case "an extra date to appear for a given movie":
@@ -232,8 +233,10 @@ let inquireAdd = async () => {
 		})
 		.catch((error) => {
 			if (error.isTtyError) {
+				console.log("Prompt couldn't be rendered in the current environment")
 				// Prompt couldn't be rendered in the current environment
 			} else {
+				console.log(error)
 				// Something else went wrong
 			}
 		});

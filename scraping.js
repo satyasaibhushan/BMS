@@ -1,6 +1,7 @@
 import puppeteer from "puppeteer";
 import { getListener, updateListener, removeListener } from "./index.js";
 import { notifyViaEmail, notifyViaSms } from "./notify.js";
+import { getStringFromListener } from "./inquirer.js";
 
 let cachedLinksForCity = {};
 let cachedDatesForMovie = {};
@@ -470,12 +471,22 @@ let getShowsFromDateAndMovieAndFormat = async (theatre, movieName, date, format 
 let checkForCondition = async (func, expression, time, notif, listenerName, id) => {
 	let timer = setInterval(
 		async () => {
-			let result = await func();
+			let listener = await getListener(id);
+			let result;
+			try {
+				result = await func();
+			} catch (e) {
+				await notifyViaEmail(
+					"satyasaibhushan@gmail.com",
+					"There has been an error",
+					`Please check!! \nFor listener,${getStringFromListener(listener)} `
+				);
+				console.log("error", e);
+			}
 			// let cachedData;
 			// if (Array.isArray(result)) (cachedData = result[1]), (result = result[0]);
 
 			console.log(result);
-			let listener = await getListener(id);
 			if ((await listener) == null) {
 				clearInterval(timer);
 				return;

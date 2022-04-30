@@ -212,7 +212,38 @@ let inquireAddTheatre = async () => {
 	return await ans;
 };
 
-let inquireAdd = async () => {
+let inquireAddOklama = async () => {
+	return await inquirer
+		.prompt({
+			name: "oklamaListener",
+			type: "list",
+			message: "Do you want to add listener for",
+			choices: ["an extra link to appear"],
+		})
+		.then(async ({ oklamaListener: answers }) => {
+			let time;
+			let emails;
+			let sms;
+			switch (answers) {
+				case "an extra link to appear":
+					time = await inquireTime();
+					emails = await inquireEmails();
+					sms = await inquireSms();
+					return [0, { time, emails, sms }];
+				default:
+					break;
+			}
+		})
+		.catch((error) => {
+			if (error.isTtyError) {
+				// Prompt couldn't be rendered in the current environment
+			} else {
+				// Something else went wrong
+			}
+		});
+};
+
+let inquireAddBMS = async () => {
 	// console.log("inquire addd");
 	return await inquirer
 		.prompt({
@@ -233,11 +264,58 @@ let inquireAdd = async () => {
 		})
 		.catch((error) => {
 			if (error.isTtyError) {
-				console.log("Prompt couldn't be rendered in the current environment")
+				console.log("Prompt couldn't be rendered in the current environment");
 				// Prompt couldn't be rendered in the current environment
 			} else {
-				console.log(error)
+				console.log(error);
 				// Something else went wrong
+			}
+		});
+};
+
+let inquireAddOther = async () => {
+	return await inquirer
+		.prompt({
+			name: "listenerType",
+			type: "list",
+			message: "Select the listener you want to add",
+			choices: ["Oklama"],
+		})
+		.then(async ({ listenerType: answers }) => {
+			switch (answers) {
+				case "Oklama":
+					return [2, ...(await inquireAddOklama())];
+				default:
+					break;
+			}
+		})
+		.catch((error) => {
+			if (error.isTtyError) {
+				console.log("Prompt couldn't be rendered in the current environment");
+				// Prompt couldn't be rendered in the current environment
+			} else {
+				console.log(error);
+				// Something else went wrong
+			}
+		});
+};
+let inquireAdd = async () => {
+	return await inquirer
+		.prompt({
+			name: "listenerFolder",
+			type: "list",
+			message: "Which of the following app you want to add listener to?",
+			choices: ["BMS", "other"],
+		})
+		.then(async ({ listenerFolder: type }) => {
+			switch (type) {
+				case "BMS":
+					return await inquireAddBMS();
+					break;
+				case "other":
+					return await inquireAddOther();
+				default:
+					return await inquireAddBMS();
 			}
 		});
 };

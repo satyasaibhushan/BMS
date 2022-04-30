@@ -12,6 +12,7 @@ import {
 	getTheatreDateUrl,
 } from "./scraping.js";
 import { getStringFromListener } from "./inquirer.js";
+import { getAllLinksFromOkalama } from "./scrapingOther.js";
 
 let fileName = "data.json";
 //type: city (or) theatre
@@ -27,6 +28,7 @@ let listenersStrings = [];
 let listenerNames = [
 	["does movie exist", "extra date appears", "extra show appears"],
 	["extra date appears", "extra show appears"],
+	["new link in oklama"],
 ];
 let getDifferent = (target, original) => {
 	for (let i = 0; i < target.length; i++) {
@@ -325,6 +327,33 @@ let addListeners = async (
 				break;
 		}
 	}
+	if (type == "other") {
+		switch (listener) {
+			case listenerNames[2][0]:
+				await checkForCondition(
+					async () => await getAllLinksFromOkalama(),
+					async (e) => {
+						let a = await getListener(id);
+						if (a) a = await a.targetConsole;
+						else return [false];
+						if (!((await a) && a.length !== 0)) return [false];
+						if (e.length > (await a.length)) {
+							let [redirectName, redirectLink] = getDifferent(e, a);
+							// listener.redirectData = [...];
+							// console.log(e);
+							let subject = `A new Link (${await redirectName}) 
+								you want has appeared in oklama.com`;
+							let body = `Kendrick!!!!! \nHere's the latest link : ${redirectLink}`;
+							return [true, subject, body];
+						} else return [false];
+					},
+					options.time,
+					console.log,
+					"other/extraLinkOnPage",
+					id
+				);
+		}
+	}
 };
 
 await (async () => {
@@ -336,4 +365,4 @@ await (async () => {
 	});
 })();
 
-export { getFileData, getListener, updateListener, removeListener, initializeListeners, addListeners,listenerNames };
+export { getFileData, getListener, updateListener, removeListener, initializeListeners, addListeners, listenerNames };

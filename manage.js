@@ -3,7 +3,8 @@ import { getStringsFromListeners, getStringFromListener, inquire } from "./inqui
 
 await (async () => {
 	await inquire(
-		async (i, j, options) => await addListeners(i == 0 ? "city" : "theatre", listenerNames[i][j], options),
+		async (i, j, options) =>
+			await addListeners(i == 0 ? "city" : i == 1 ? "theatre" : "other", listenerNames[i][j], options),
 		async () => await getFileData(),
 		async (id) => await removeListener(id),
 		async () => await getFileData(),

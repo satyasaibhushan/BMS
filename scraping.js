@@ -26,6 +26,7 @@ let updateTicks = async () => {
 		// ticks = 0;
 	}, 2000);
 };
+let decreaseTicks = async() => ticks--;
 
 let updateCacheForCity = (date, format, link, shouldUpdateLink = true, isForLinks = true) => {
 	let cacheRepo;
@@ -79,7 +80,7 @@ async function autoScroll(page) {
 
 //Launch puppeteer browser and load the page
 let launchPuppeteer = async (url, isHeadless = false, waitUntil = "domcontentloaded") => {
-	const browser = await puppeteer.launch({ headless: true });
+	const browser = await puppeteer.launch({ headless: isHeadless });
 	const page = await browser.newPage();
 	ticks++;
 	await page.goto(url, { waitUntil: waitUntil });
@@ -518,6 +519,8 @@ export {
 	getShowsFromDateAndMovieAndFormat,
 	checkForCondition,
 	getTheatreDateUrl,
+	launchPuppeteer,
+	decreaseTicks,
 };
 
 (async () => {

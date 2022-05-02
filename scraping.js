@@ -79,7 +79,7 @@ async function autoScroll(page) {
 }
 
 //Launch puppeteer browser and load the page
-let launchPuppeteer = async (url, isHeadless = false, waitUntil = "domcontentloaded") => {
+let launchPuppeteer = async (url, isHeadless = true, waitUntil = "domcontentloaded") => {
 	const browser = await puppeteer.launch({ headless: isHeadless });
 	const page = await browser.newPage();
 	ticks++;

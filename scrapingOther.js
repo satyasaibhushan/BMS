@@ -5,7 +5,7 @@ let getAllLinksFromOkalama = async () => {
 
 	let links = await page.evaluate(async () => {
 		let links = Array.from(document.getElementsByTagName("a"));
-		links = links.map((ele) => ele.innerText);
+		links = links.map((ele) => [ele.innerText, ele.href]);
 		// console.log(links);
 		return links;
 	});

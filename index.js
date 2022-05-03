@@ -44,6 +44,20 @@ let getDifferent = (target, original) => {
 		if (flag == 0) return ele;
 	}
 };
+let getDifferent2 = (target, original) => {
+	for (let i = 0; i < target.length; i++) {
+		const ele = target[i];
+		let flag = 0;
+		for (let j = 0; j < original.length; j++) {
+			const ele2 = original[j];
+			if (ele2[0] == ele[0] && ele2[1] == ele[1]) {
+				flag = 1;
+				break;
+			}
+		}
+		if (flag == 0) return ele;
+	}
+};
 
 const writeToFile = async (filename, obj) => {
 	await fs.writeFileSync(filename, await JSON.stringify(obj), function (err) {
@@ -338,7 +352,9 @@ let addListeners = async (
 						else return [false];
 						if (!((await a) && a.length !== 0)) return [false];
 						if (e.length > (await a.length)) {
-							let [redirectName, redirectLink] = getDifferent(e, a);
+							// console.log(getDifferent(e, a));
+							let [redirectName, redirectLink] = getDifferent2(e, a);
+							// let [redirectName, redirectLink] = getDifferent(e, a);
 							// listener.redirectData = [...];
 							// console.log(e);
 							let subject = `A new Link (${await redirectName}) 

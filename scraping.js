@@ -183,7 +183,7 @@ let getDatesFromMovie = async (city, movieName) => {
 	}
 	// console.log(await movieLink);
 
-	let [browser, page] = await launchPuppeteer(await movieLink, null, "networkidle0");
+	let [browser, page] = await launchPuppeteer(await movieLink, true, "networkidle0");
 
 	let oldUrl = await page.url();
 
